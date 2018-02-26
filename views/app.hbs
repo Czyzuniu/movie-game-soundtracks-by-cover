@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="stylesheets/style.css">
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+	<script
+	  src="https://code.jquery.com/jquery-3.3.1.min.js"
+	  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+	  crossorigin="anonymous">
+  	</script>
+	<title></title>
+</head>
+<body id="body">
+	<main id="wrapper">
+		<header>
+			<h1>{{title}}</h1>
+		</header>
+		<section id="upload">
+			<input type="file" name="uploadedFile" id="uploadedFile">
+			<button class="btn btn-primary pull-right" id="submit" disabled>Submit</button>
+		</section>
+		<section id="music" class="hidden">
+			
+		</section>
+	</main>
+
+	<div id="options" class="hidden">
+	</div>
+
+</body>
+</html>
+
+
+<script type="text/javascript">
+	'use strict'
+
+	window.addEventListener('load', () => {
+		const submit = window.submit
+		const uploadedFile = window.uploadedFile
+
+
+		uploadedFile.addEventListener('change', () => {
+			if (uploadedFile.value == "") {
+				submit.disabled = true
+			} else {
+				submit.disabled = false
+			}
+		})
+
+		submit.addEventListener('click', () => {
+			showWaitSpinner()
+			const formData = new FormData();
+			const fileField = document.querySelector("input[type='file']");
+
+			formData.append('uploadedFile', fileField.files[0]);
+
+			fetch('/uploadFile', {
+					method: 'POST',
+					body: formData
+				})
+			    .then(res => {
+			        return res.json()
+			      })
+			    .then((response) => {
+			    	populateOptions(response.responses[0].webDetection.webEntities)
+			    	hideWaitSpinner()
+			    })
+		})
+	})
+
+
+
+function showWaitSpinner() {
+	let container = document.createElement('div')
+	let spinner = document.createElement('div')
+	spinner.classList.add('loader')
+	spinner.id = "waitSpinner"
+
+	container.id = 'spinnerContainer'
+	container.appendChild(spinner)
+	window.body.appendChild(container)
+
+	window.wrapper.classList.toggle('blur')
+}
+
+function hideWaitSpinner() {
+	let spinner = window.spinnerContainer
+	if (spinner) {
+		spinner.remove()
+		window.wrapper.classList.toggle('blur')
+	}
+}
+
+
+function populateOptions(data) {
+	window.wrapper.classList.toggle('none')
+	let container = window.options;
+	container.innerHTML = ''
+	container.classList.toggle('hidden')
+
+	data.forEach(function(item, index, data) {
+  		let button = document.createElement('button')
+  		button.id = index;
+  		button.className = 'btn btn-primary pull-right'
+  		button.textContent = item.description
+  		button.addEventListener('click', () => {
+
+  			let data = {
+  				coverName:item.description
+  			}
+
+  			fetch("/getSoundTracks", {
+  				method: 'POST',
+  				headers: {
+        			'Accept': 'application/json',
+        			'Content-Type': 'application/json'
+      			},
+  				body: JSON.stringify(data)
+			}).then(res => {
+				return res.json()
+			})
+			.then((response) => {
+
+			})
+  		})
+  		container.appendChild(button)
+	});
+}
+
+</script>
