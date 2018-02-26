@@ -166,3 +166,16 @@ header h1 {
 .none {
 	display: none !important;
 }
+
+
+#options .img-thumbnail {
+	width: 200px
+}
+
+
+.caption {
+	height: 88px;
+    width: 199px;
+    font-size: 15px;
+    text-align: center;
+}

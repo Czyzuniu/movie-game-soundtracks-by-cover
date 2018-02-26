@@ -11,6 +11,7 @@
 	<title></title>
 </head>
 <body id="body">
+	<input type="hidden" value="{{access_token}}" id="accessToken">
 	<main id="wrapper">
 		<header>
 			<h1>{{title}}</h1>
@@ -62,7 +63,7 @@
 			        return res.json()
 			      })
 			    .then((response) => {
-			    	populateOptions(response.responses[0].webDetection.webEntities)
+			    	populateStartingOptions(response.responses[0].webDetection.webEntities)
 			    	hideWaitSpinner()
 			    })
 		})
@@ -92,13 +93,13 @@ function hideWaitSpinner() {
 }
 
 
-function populateOptions(data) {
+function populateStartingOptions(data) {
 	window.wrapper.classList.toggle('none')
 	let container = window.options;
 	container.innerHTML = ''
 	container.classList.toggle('hidden')
 
-	data.forEach(function(item, index, data) {
+	data.forEach((item, index, data) => {
   		let button = document.createElement('button')
   		button.id = index;
   		button.className = 'btn btn-primary pull-right'
@@ -106,7 +107,8 @@ function populateOptions(data) {
   		button.addEventListener('click', () => {
 
   			let data = {
-  				coverName:item.description
+  				coverName:item.description,
+  				access_token:window.accessToken.value
   			}
 
   			fetch("/getSoundTracks", {
@@ -120,11 +122,33 @@ function populateOptions(data) {
 				return res.json()
 			})
 			.then((response) => {
-
+				populateAlbumOptions(response.albums.items)
 			})
   		})
   		container.appendChild(button)
 	});
+}
+
+
+
+function populateAlbumOptions(data) {
+	console.log(data)
+	let container = window.options;
+	container.innerHTML = ''
+
+	data.forEach((album) => {
+		let coverContainer = document.createElement('div')
+		let cover = document.createElement('img')
+		cover.src =  album.images[0].url
+		cover.className = 'img-thumbnail'
+		coverContainer.appendChild(cover)
+		let caption = document.createElement('div')
+		caption.classList.add('caption')
+		caption.textContent = album.name
+		coverContainer.appendChild(caption)
+		container.appendChild(coverContainer)
+	})
+
 }
 
 </script>

@@ -3,15 +3,15 @@ const router = express.Router();
 const multer  = require('multer')
 const fs = require('fs');
 const rp = require('request-promise')
-var request = require('request');
+var request = require('request'); // "Request" library
 var querystring = require('querystring');
 
 
 
 
-var client_id = process.env.SPOTIFY_CLIENT_ID;
-var client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-var redirect_uri = 'http://localhost:3000/app';
+var client_id = process.env.SPOTIFY_CLIENT_ID; // Your client id
+var client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Your secret
+var redirect_uri = 'http://localhost:3000/callback'; // Your redirect uri
 
 const uploader = multer({
   dest: "uploads/",
@@ -28,11 +28,10 @@ router.get('/', (req, res, next) => {
   res.render('index');
 });
 
-/* GET application page. */
+/* GET home page. */
 router.get('/app', (req, res, next) => {
-  res.render('app', { title: 'Soundtracks by photo cover' });
+  res.render('app', {title:"Songs by Movie/Game cover", access_token:req.query.access_token});
 });
-
 
 
 router.post('/uploadFile', uploader.single('uploadedFile'), (req, res) => {
@@ -68,7 +67,8 @@ router.post('/uploadFile', uploader.single('uploadedFile'), (req, res) => {
 		      ]
 		    }
 		  ]
-		}
+		},
+	    json: true // Automatically stringifies the body to JSON
 	};
 
 	 
@@ -84,7 +84,28 @@ router.post('/uploadFile', uploader.single('uploadedFile'), (req, res) => {
 
 
 router.post('/getSoundTracks', (req, res, next) => {
-  	console.log(req.body.coverName);
+
+	console.log(req.body.coverName)
+
+  	var options = {
+	    method: 'GET',
+	    uri: 'https://api.spotify.com/v1/search?q=' + req.body.coverName + "&type=album",
+	    headers: {
+       		'Authorization': 'Bearer ' + req.body.access_token
+   		},
+	    json: true // Automatically stringifies the body to JSON
+	};
+
+	console.log(options)
+
+	rp(options)
+	    .then(function (parsedBody) {
+	        res.json(parsedBody)
+	    })
+	    .catch(function (err) {
+	        console.log(err)
+	});
+
 });
 
 //spotify stuff
@@ -108,7 +129,7 @@ router.get('/login', function(req, res) {
     }));
 });
 
-router.get('/app', function(req, res) {
+router.get('/callback', function(req, res) {
 
   // your application requests refresh and access tokens
   // after checking the state parameter
@@ -137,6 +158,7 @@ router.get('/app', function(req, res) {
       json: true
     };
 
+
     request.post(authOptions, function(error, response, body) {
       if (!error && response.statusCode === 200) {
 
@@ -155,7 +177,7 @@ router.get('/app', function(req, res) {
         });
 
         // we can also pass the token to the browser to make requests from there
-        res.redirect('/#' +
+        res.redirect('/app?' +
           querystring.stringify({
             access_token: access_token,
             refresh_token: refresh_token
@@ -193,6 +215,8 @@ router.get('/refresh_token', function(req, res) {
     }
   });
 });
+
+
 
 // function to encode file data to base64 encoded string
 function base64_encode(file) {
