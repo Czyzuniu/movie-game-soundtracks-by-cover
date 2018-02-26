@@ -3,15 +3,15 @@ const router = express.Router();
 const multer  = require('multer')
 const fs = require('fs');
 const rp = require('request-promise')
-var request = require('request'); // "Request" library
+var request = require('request');
 var querystring = require('querystring');
 
 
 
 
-var client_id = process.env.SPOTIFY_CLIENT_ID; // Your client id
-var client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Your secret
-var redirect_uri = 'http://localhost:3000/app'; // Your redirect uri
+var client_id = process.env.SPOTIFY_CLIENT_ID;
+var client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+var redirect_uri = 'http://localhost:3000/app';
 
 const uploader = multer({
   dest: "uploads/",
@@ -34,6 +34,58 @@ router.get('/app', (req, res, next) => {
 });
 
 
+
+router.post('/uploadFile', uploader.single('uploadedFile'), (req, res) => {
+
+    // get the temporary location of the file
+    var tmp_path = req.file.path;
+    // set where the file should actually exists - in this case it is in the "images" directory
+    const fileName = req.file.filename + '.' + req.file.mimetype.split('/')[1];
+    var target_path = './public/images/' + fileName
+    // move the file from the temporary location to the intended location
+    fs.rename(tmp_path, target_path, function(err) {
+        if (err) throw err;
+        // delete the temporary file, so that the explicitly set temporary upload dir does not get filled with unwanted files
+        fs.unlink(tmp_path, function() {
+            if (err) throw err;
+        });
+    });
+
+	var options = {
+	    method: 'POST',
+	    uri: 'https://vision.googleapis.com/v1/images:annotate?key=' + process.env.GOOGLE_VISION_KEY,
+	    body: {
+		  "requests":[
+		    {
+		      "image":{
+				  "content": base64_encode(target_path)
+			},
+		      "features":[
+		        {
+		          "type":"WEB_DETECTION",
+		          "maxResults":10
+		        }
+		      ]
+		    }
+		  ]
+		}
+	};
+
+	 
+	rp(options)
+	    .then(function (parsedBody) {
+	        res.json(parsedBody)
+	    })
+	    .catch(function (err) {
+	        console.log(err)
+	    });
+
+});
+
+
+router.post('/getSoundTracks', (req, res, next) => {
+  	console.log(req.body.coverName);
+});
 
 //spotify stuff
 
@@ -141,62 +193,6 @@ router.get('/refresh_token', function(req, res) {
     }
   });
 });
-
-
-router.post('/uploadFile', uploader.single('uploadedFile'), (req, res) => {
-
-    // get the temporary location of the file
-    var tmp_path = req.file.path;
-    // set where the file should actually exists - in this case it is in the "images" directory
-    const fileName = req.file.filename + '.' + req.file.mimetype.split('/')[1];
-    var target_path = './public/images/' + fileName
-    // move the file from the temporary location to the intended location
-    fs.rename(tmp_path, target_path, function(err) {
-        if (err) throw err;
-        // delete the temporary file, so that the explicitly set temporary upload dir does not get filled with unwanted files
-        fs.unlink(tmp_path, function() {
-            if (err) throw err;
-        });
-    });
-
-	var options = {
-	    method: 'POST',
-	    uri: 'https://vision.googleapis.com/v1/images:annotate?key=' + process.env.GOOGLE_VISION_KEY,
-	    body: {
-		  "requests":[
-		    {
-		      "image":{
-				  "content": base64_encode(target_path)
-			},
-		      "features":[
-		        {
-		          "type":"WEB_DETECTION",
-		          "maxResults":10
-		        }
-		      ]
-		    }
-		  ]
-		},
-	    json: true // Automatically stringifies the body to JSON
-	};
-
-	 
-	rp(options)
-	    .then(function (parsedBody) {
-	        res.json(parsedBody)
-	    })
-	    .catch(function (err) {
-	        console.log(err)
-	    });
-
-});
-
-
-router.post('/getSoundTracks', (req, res, next) => {
-  	console.log(req.body.coverName);
-});
-
-
 
 // function to encode file data to base64 encoded string
 function base64_encode(file) {
