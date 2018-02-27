@@ -132,7 +132,6 @@ function populateStartingOptions(data) {
 
 
 function populateAlbumOptions(data) {
-	console.log(data)
 	let container = window.options;
 	container.innerHTML = ''
 
@@ -147,8 +146,50 @@ function populateAlbumOptions(data) {
 		caption.textContent = album.name
 		coverContainer.appendChild(caption)
 		container.appendChild(coverContainer)
+
+
+		cover.addEventListener('click', async () => {
+
+			let data = await fetch('https://api.spotify.com/v1/albums/' + album.id, {
+				method:'GET',
+				headers: {
+       				'Authorization': 'Bearer ' + window.accessToken.value
+   				}
+			})
+
+			let albumData = await data.json()
+
+			renderReceivedtracks(albumData.tracks.items)
+
+		})
 	})
 
+}
+
+
+async function renderReceivedtracks(data) {
+	let container = window.options;
+	container.innerHTML = ''
+
+	data.forEach((track) => {
+
+		let trackContainer = document.createElement('div')
+		trackContainer.classList.add('track')
+
+		let audio = document.createElement('audio')
+		audio.style.width = '100%';
+		audio.src = track.preview_url
+		audio.controls = true;
+		trackContainer.appendChild(audio)
+
+		let songName = document.createElement('div')
+		songName.classList.add('songName')
+		songName.textContent = track.name
+		trackContainer.appendChild(songName)
+
+		container.appendChild(trackContainer)
+
+	})
 }
 
 </script>

@@ -3,15 +3,15 @@ const router = express.Router();
 const multer  = require('multer')
 const fs = require('fs');
 const rp = require('request-promise')
-var request = require('request'); // "Request" library
+var request = require('request');
 var querystring = require('querystring');
 
 
 
 
-var client_id = process.env.SPOTIFY_CLIENT_ID; // Your client id
-var client_secret = process.env.SPOTIFY_CLIENT_SECRET; // Your secret
-var redirect_uri = 'http://localhost:3000/callback'; // Your redirect uri
+var client_id = process.env.SPOTIFY_CLIENT_ID;
+var client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+var redirect_uri = 'http://localhost:3000/callback';
 
 const uploader = multer({
   dest: "uploads/",
@@ -68,7 +68,7 @@ router.post('/uploadFile', uploader.single('uploadedFile'), (req, res) => {
 		    }
 		  ]
 		},
-	    json: true // Automatically stringifies the body to JSON
+	    json: true
 	};
 
 	 
@@ -85,18 +85,14 @@ router.post('/uploadFile', uploader.single('uploadedFile'), (req, res) => {
 
 router.post('/getSoundTracks', (req, res, next) => {
 
-	console.log(req.body.coverName)
-
   	var options = {
 	    method: 'GET',
-	    uri: 'https://api.spotify.com/v1/search?q=' + req.body.coverName + "&type=album",
+	    uri: 'https://api.spotify.com/v1/search?q=' + req.body.coverName + "&type=album&limit=10",
 	    headers: {
        		'Authorization': 'Bearer ' + req.body.access_token
    		},
-	    json: true // Automatically stringifies the body to JSON
+	    json: true
 	};
-
-	console.log(options)
 
 	rp(options)
 	    .then(function (parsedBody) {
