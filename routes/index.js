@@ -36,50 +36,58 @@ router.get('/app', (req, res, next) => {
 
 router.post('/uploadFile', uploader.single('uploadedFile'), (req, res) => {
 
+
+
     // get the temporary location of the file
     var tmp_path = req.file.path;
     // set where the file should actually exists - in this case it is in the "images" directory
     const fileName = req.file.filename + '.' + req.file.mimetype.split('/')[1];
     var target_path = './public/images/' + fileName
-    // move the file from the temporary location to the intended location
-    fs.rename(tmp_path, target_path, function(err) {
-        if (err) throw err;
-        // delete the temporary file, so that the explicitly set temporary upload dir does not get filled with unwanted files
-        fs.unlink(tmp_path, function() {
-            if (err) throw err;
+
+    base64_encode(tmp_path).then((base64) => {
+      var options = {
+        method: 'POST',
+        uri: 'https://vision.googleapis.com/v1/images:annotate?key=' + process.env.GOOGLE_VISION_KEY,
+        body: {
+          "requests":[
+            {
+              "image":{
+                "content":base64
+              },
+              "features":[
+                {
+                  "type":"WEB_DETECTION",
+                  "maxResults":10
+                }
+              ]
+            }
+          ]
+        },
+        json:true
+      };
+
+
+      rp(options)
+        .then(function (parsedBody) {
+          console.log(parsedBody)
+          res.json(parsedBody)
+
+        })
+        .catch(function (err) {
+          console.log(err)
         });
-    });
 
-	var options = {
-	    method: 'POST',
-	    uri: 'https://vision.googleapis.com/v1/images:annotate?key=' + process.env.GOOGLE_VISION_KEY,
-	    body: {
-		  "requests":[
-		    {
-		      "image":{
-				  "content": base64_encode(target_path)
-			},
-		      "features":[
-		        {
-		          "type":"WEB_DETECTION",
-		          "maxResults":10
-		        }
-		      ]
-		    }
-		  ]
-		},
-	    json: true
-	};
+    })
 
-	 
-	rp(options)
-	    .then(function (parsedBody) {
-	        res.json(parsedBody)
-	    })
-	    .catch(function (err) {
-	        console.log(err)
-	    });
-
+    //
+    // // move the file from the temporary location to the intended location
+    // fs.rename(tmp_path, target_path, function(err) {
+    //     if (err) throw err;
+    //     // delete the temporary file, so that the explicitly set temporary upload dir does not get filled with unwanted files
+    //     fs.unlink(tmp_path, function() {
+    //         if (err) throw err;
+    //     });
+    // });
 });
 
 
@@ -216,10 +224,10 @@ router.get('/refresh_token', function(req, res) {
 
 // function to encode file data to base64 encoded string
 function base64_encode(file) {
-    // read binary data
-    var bitmap = fs.readFileSync(file);
-    // convert binary data to base64 encoded string
-    return new Buffer(bitmap).toString('base64');
+    return new Promise((res) => {
+      var bitmap = fs.readFileSync(file);
+      res(new Buffer(bitmap).toString('base64'))
+    })
 }
 
 
